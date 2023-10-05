@@ -1,0 +1,45 @@
+Objective:
+To enhance security by redacting sensitive information, such as access tokens, from request URIs in Nginx access logs.
+
+Overview:
+In this activity, we added a new log format and configured a map block to modify request URIs and hide sensitive information. This ensures that sensitive data is not logged in Nginx access logs.
+
+Steps Taken:
+1. Editing Nginx Configuration:
+Open the Nginx configuration file for editing. This file is located at /etc/nginx/nginx.conf
+2. Defining a New Log Format:
+Define a new log format, named custom, which includes $modified_uri to log the modified URIs instead of the original request URIs.
+Log Format Configuration:
+log_format custom '[$host] [Remote-addr=$remote_addr] [client_addr=$http_SP_Client_RealIP] $remote_user [$time_local] "$modified_uri" $status $body_bytes_sent "$http_referer" "$http_user_agent" request_time=$request_time upstream_response_time=$upstream_response_time upstream_connect_time=$upstream_connect_time upstream_header_time=$upstream_header_time';
+3. Adding a Map Block:
+Added a map block to the Nginx configuration to create a variable, $modified_uri, which stores the modified URIs.
+Map Block Configuration:
+map $request_uri $modified_uri {
+    ~^/api/pea/[^/]+ /api/pea/XXXXXXXXXXXX;
+    ~^/api/pea/poa/[^/]+ /api/pea/poa/XXXXXXXXXXXX;
+    ~^(.+)/[^/]+$ $1/XXXXXXXXXXXX;
+    default $request_uri;
+}
+The map block uses regular expressions to match and modify different types of request URIs:
+URLs that start with /api/pea/ are modified to replace access tokens with XXXXXXXXXXXX.
+URLs that start with /api/pea/poa/ are modified similarly.
+All other URLs have everything after the last / replaced with XXXXXXXXXXXX.
+The default line ensures that unhandled URLs use the original $request_uri.
+4. Updating Access Log Configuration:
+
+        Updated the access log configuration to use the new custom log format.
+Access Log Configuration:
+access_log /var/log/nginx/access.log custom;
+5. Testing and Validation:
+
+Save the changes and check the Nginx configuration file for syntax errors.
+  nginx -t 
+6. Reload Nginx:
+
+Reload the Nginx to apply changes  
+ systemctl reload nginx
+Check Status of Nginx
+ systemctl status nginx
+
+.If Nginx is not active then try to restart the nginx 
+  systemctl restart nginx.
